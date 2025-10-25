@@ -1,24 +1,19 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Sora } from "next/font/google"; // Import Sora font
+import { Sora } from "next/font/google";
 import Orb from "../Orb";
 
-// Configure Sora font
 const sora = Sora({
   subsets: ["latin"],
-  weight: ["400", "700"], // Include weights as needed
+  weight: ["400", "700"],
 });
 
-const transition = {
-  duration: 0,
-  ease: "linear",
-};
 
-export const GoogleGeminiEffect = ({ pathLengths, className }) => {
+// Component Definition
+export const GoogleGeminiEffect = ({  className }) => {
   const pathRefs = useRef([]);
   const [points, setPoints] = useState([]);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -34,149 +29,189 @@ export const GoogleGeminiEffect = ({ pathLengths, className }) => {
     "/logo5.png",
   ];
 
-  // Offsets for logos at their starting position (spread out, will converge)
   const logoStartOffsets = [
-    { x: 0, y: 0 }, // logo 1 (line 5, index 0)
-    { x: 0, y: 0 }, // logo 2 (line 4, index 1)
-    { x: 0, y: 0 }, // logo 3 (line 3, index 2)
-    { x: 0, y: 0 }, // logo 4 (line 2, index 3)
-    { x: 0, y: 0 }, // logo 5 (line 1, index 4)
+    { x: 0, y: 0 },
+    { x: 0, y: 0 },
+    { x: 0, y: 0 },
+    { x: 0, y: 0 },
+    { x: 0, y: 0 },
   ];
 
-  // Target offsets at 50% (minimal offset, converged)
   const logoEndOffsets = [
-    { x: 0, y: 0 }, // logo 1 (line 5, index 0)
-    { x: 0, y: 0 }, // logo 2 (line 4, index 1)
-    { x: 0, y: 0 }, // logo 3 (line 3, index 2)
-    { x: 0, y: 0 }, // logo 4 (line 2, index 3)
-    { x: 0, y: 0 }, // logo 5 (line 1, index 4)
+    { x: 0, y: 0 },
+    { x: 0, y: 0 },
+    { x: 0, y: 0 },
+    { x: 0, y: 0 },
+    { x: 0, y: 0 },
   ];
 
-  // Map scroll progress (50% to 80%) to path progress (50% to 100%) for TRIG with stagger
-  const getPathProgress = useCallback(
-    (scrollProgress, index) => {
-      const totalItems = logos.length; // 5 TRIG divs
-      const delayPerItem = 1; // Each TRIG div starts 5% scroll progress after the previous
-      const startScroll = 50 + index * delayPerItem; // Start at 50%, 55%, 60%, 65%, 70%
-      const endScroll = startScroll + 25; // Each TRIG div animates over 25% scroll range
+  // Progress Calculations
+  const getPathProgress = useCallback((scrollProgress, index) => {
+  try {
+    // Spread out per-item animations evenly between 0 and 100
+    const totalItems = 5; // number of paths
+    const startScroll = (index / totalItems) * 100;
+    const endScroll = ((index + 1) / totalItems) * 100;
 
-      if (scrollProgress < startScroll) return 0; // Before TRIG's start
-      if (scrollProgress >= endScroll) return 1; // After TRIG reaches end
-      // Map scroll progress to path progress (0.5 to 1) within the TRIG's scroll range
-      return 0.5 + ((scrollProgress - startScroll) / (endScroll - startScroll)) * 0.5;
-    },
-    [logos.length]
-  );
+    if (scrollProgress < startScroll) return 0;
+    if (scrollProgress >= endScroll) return 1;
 
-  // Map scroll progress (0% to 50%) to logo path progress (0% to 50%) with stagger
+    return (scrollProgress - startScroll) / (endScroll - startScroll);
+  } catch (e) {
+    console.error("Error in getPathProgress:", e);
+    return 0;
+  }
+}, []);
+
+
   const getLogoPathProgress = (scrollProgress, index) => {
-    const totalLogos = logos.length; // 5 logos
-    const delayPerLogo = 10; // Each logo starts 10% scroll progress after the previous
-    const startScroll = index * delayPerLogo; // Delay based on index (0, 10, 20, 30, 40)
-    const endScroll = startScroll + 40; // Each logo animates over 40% scroll range
+    try {
+      const delayPerLogo = 18;
+      const startScroll = index * delayPerLogo;
+      const endScroll = startScroll + 40;
 
-    if (scrollProgress < startScroll) return 0; // Before logo's start
-    if (scrollProgress >= endScroll) return 0.5; // After logo reaches midpoint
-    // Map scroll progress to path progress (0 to 0.5) within the logo's scroll range
-    return ((scrollProgress - startScroll) / (endScroll - startScroll)) * 0.5;
+      if (scrollProgress < startScroll) return 0;
+      if (scrollProgress >= endScroll) return 0.5;
+      return ((scrollProgress - startScroll) / (endScroll - startScroll)) * 0.5;
+    } catch (e) {
+      console.error("Error in getLogoPathProgress:", e);
+      return 0;
+    }
   };
 
-  // Calculate start and midpoint points along each path
+  // Effect Hooks
   useEffect(() => {
-    if (!pathRefs.current.length) return;
+    try {
+      if (!pathRefs.current.length) return;
 
-    const newPoints = pathRefs.current.map((path) => {
-      if (!path) return [];
-      const length = path.getTotalLength();
-      return [0, length * 0.5].map((pos) => path.getPointAtLength(pos));
-    });
+      const newPoints = pathRefs.current.map((path) => {
+        if (!path) return [];
+        try {
+          const length = path.getTotalLength();
+          return [0, length * 0.5].map((pos) => path.getPointAtLength(pos));
+        } catch (e) {
+          console.error("Error in path point calculation:", e);
+          return [];
+        }
+      });
 
-    setPoints(newPoints);
+      setPoints(newPoints);
+    } catch (e) {
+      console.error("Error in points effect:", e);
+    }
   }, []);
 
-  // Track scroll progress
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-      setScrollProgress(progress);
-    };
+    try {
+      const handleScroll = () => {
+        try {
+          const scrollTop = window.scrollY;
+          const docHeight =
+            document.documentElement.scrollHeight - window.innerHeight;
+          const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+          setScrollProgress(progress);
+        } catch (e) {
+          console.error("Error in scroll handler:", e);
+        }
+      };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+      window.addEventListener("scroll", handleScroll);
+      return () => window.removeEventListener("scroll", handleScroll);
+    } catch (e) {
+      console.error("Error in scroll effect:", e);
+    }
   }, []);
 
-  // Calculate initial TRIG positions (midpoint) on mount
   useEffect(() => {
-    if (!pathRefs.current.length) return;
+    try {
+      if (!pathRefs.current.length) return;
 
-    const initialPositions = pathRefs.current.map((path) => {
-      if (!path) return { x: 0, y: 0 };
-      try {
-        const totalLength = path.getTotalLength();
-        return path.getPointAtLength(totalLength * 0.5);
-      } catch (e) {
-        return { x: 0, y: 0 };
-      }
-    });
+      const initialPositions = pathRefs.current.map((path) => {
+        if (!path) return { x: 0, y: 0 };
+        try {
+          const totalLength = path.getTotalLength();
+          return path.getPointAtLength(totalLength * 0.5);
+        } catch (e) {
+          console.error("Error in initial trig position calculation:", e);
+          return { x: 0, y: 0 };
+        }
+      });
 
-    setInitialTrigPositions(initialPositions);
+      setInitialTrigPositions(initialPositions);
+    } catch (e) {
+      console.error("Error in initial trig positions effect:", e);
+    }
   }, [points]);
 
-  // Calculate TRIG positions in animation frame
   useEffect(() => {
-    const updateTrigPositions = () => {
-      if (!pathRefs.current.length) {
-        setTrigPositions([]);
-        return;
-      }
-
-      const newTrigPositions = pathRefs.current.map((path, index) => {
-        if (!path) return null;
+    try {
+      const updateTrigPositions = () => {
         try {
-          const totalLength = path.getTotalLength();
-          const pathProgress = getPathProgress(scrollProgress, index);
-          const pathPosition = totalLength * (0.5 + pathProgress * 0.5);
-          return path.getPointAtLength(pathPosition);
+          if (!pathRefs.current.length) {
+            setTrigPositions([]);
+            return;
+          }
+
+          const newTrigPositions = pathRefs.current.map((path, index) => {
+            if (!path) return null;
+            try {
+              const totalLength = path.getTotalLength();
+              const pathProgress = getPathProgress(scrollProgress, index);
+              const pathPosition = totalLength * (0.5 + pathProgress * 0.5);
+              return path.getPointAtLength(pathPosition);
+            } catch (e) {
+              console.error("Error in trig position update:", e);
+              return null;
+            }
+          });
+
+          setTrigPositions(newTrigPositions);
         } catch (e) {
-          return null;
+          console.error("Error in trig positions frame update:", e);
         }
-      });
+      };
 
-      setTrigPositions(newTrigPositions);
-    };
-
-    requestAnimationFrame(updateTrigPositions);
+      requestAnimationFrame(updateTrigPositions);
+    } catch (e) {
+      console.error("Error in trig positions effect:", e);
+    }
   }, [getPathProgress, scrollProgress]);
 
-  // Calculate logo positions in animation frame
   useEffect(() => {
-    const updateLogoPositions = () => {
-      if (!pathRefs.current.length) {
-        setLogoPositions([]);
-        return;
-      }
-
-      const newLogoPositions = pathRefs.current.map((path, index) => {
-        if (!path) return null;
+    try {
+      const updateLogoPositions = () => {
         try {
-          const totalLength = path.getTotalLength();
-          const logoProgress = getLogoPathProgress(scrollProgress, index);
-          const pathPosition = totalLength * logoProgress;
-          return path.getPointAtLength(pathPosition);
+          if (!pathRefs.current.length) {
+            setLogoPositions([]);
+            return;
+          }
+
+          const newLogoPositions = pathRefs.current.map((path, index) => {
+            if (!path) return null;
+            try {
+              const totalLength = path.getTotalLength();
+              const logoProgress = getLogoPathProgress(scrollProgress, index);
+              const pathPosition = totalLength * logoProgress;
+              return path.getPointAtLength(pathPosition);
+            } catch (e) {
+              console.error("Error in logo position update:", e);
+              return null;
+            }
+          });
+
+          setLogoPositions(newLogoPositions);
         } catch (e) {
-          return null;
+          console.error("Error in logo positions frame update:", e);
         }
-      });
+      };
 
-      setLogoPositions(newLogoPositions);
-    };
-
-    requestAnimationFrame(updateLogoPositions);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      requestAnimationFrame(updateLogoPositions);
+    } catch (e) {
+      console.error("Error in logo positions effect:", e);
+    }
   }, [scrollProgress]);
 
+  // Path Data
   const paths = [
     {
       d: "M0 663C145.5 663 191 666.265 269 647C326.5 630 339.5 621 397.5 566C439 531.5 455 529.5 490 523C509.664 519.348 521 503.736 538 504.236C553.591 504.236 562.429 514.739 584.66 522.749C592.042 525.408 600.2 526.237 607.356 523.019C624.755 515.195 641.446 496.324 657 496.735C673.408 496.735 693.545 519.572 712.903 526.769C718.727 528.934 725.184 528.395 730.902 525.965C751.726 517.115 764.085 497.106 782 496.735C794.831 496.47 804.103 508.859 822.469 518.515C835.13 525.171 850.214 526.815 862.827 520.069C875.952 513.049 889.748 502.706 903.5 503.736C922.677 505.171 935.293 510.562 945.817 515.673C954.234 519.76 963.095 522.792 972.199 524.954C996.012 530.611 1007.42 534.118 1034 549C1077.5 573.359 1082.5 594.5 1140 629C1206 670 1328.5 662.5 1440 662.5",
@@ -200,10 +235,17 @@ export const GoogleGeminiEffect = ({ pathLengths, className }) => {
     },
   ];
 
+  // Render
   return (
-    <div className={cn("sticky top-0", className)}>
-      {/* Main Logo with TRIG text in top left corner */}
-      <div className="absolute top-4 left-6 z-50 ">
+    <div
+      className={cn("sticky top-0", className)}
+      style={{
+        background:
+          "linear-gradient(180deg, rgba(70, 70, 70, 0.9) 0%, rgba(120, 120, 120, 0.9) 100%)",
+
+      }}
+    >
+      <div className="absolute top-4 left-6 z-50">
         <div className="relative w-18 h-18">
           <Image
             src="/logomain.jpg"
@@ -227,7 +269,6 @@ export const GoogleGeminiEffect = ({ pathLengths, className }) => {
           style={{ position: "relative", width: "500px", height: "500px" }}
           className="pt-6 z-50 flex items-center justify-center"
         >
-          {/* Black background circle */}
           <div
             style={{
               position: "absolute",
@@ -242,10 +283,9 @@ export const GoogleGeminiEffect = ({ pathLengths, className }) => {
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: "1rem", // Space between TRIG text and button
+              gap: "1rem",
             }}
           >
-            {/* TRIG text in center with Sora font */}
             <span
               className={cn(
                 sora.className,
@@ -254,7 +294,6 @@ export const GoogleGeminiEffect = ({ pathLengths, className }) => {
             >
               TRIG
             </span>
-            {/* Green button below TRIG text */}
             <button
               className={cn(
                 sora.className,
@@ -265,7 +304,6 @@ export const GoogleGeminiEffect = ({ pathLengths, className }) => {
             </button>
           </div>
 
-          {/* Orb on top */}
           <div
             style={{
               width: "100%",
@@ -295,10 +333,7 @@ export const GoogleGeminiEffect = ({ pathLengths, className }) => {
       >
         {paths.map((p, i) => (
           <g key={i}>
-            {/* Grey background path */}
             <path d={p.d} stroke="#555" strokeWidth="2" fill="none" />
-
-            {/* Animated colored path */}
             <motion.path
               ref={(el) => (pathRefs.current[i] = el)}
               d={p.d}
@@ -306,12 +341,13 @@ export const GoogleGeminiEffect = ({ pathLengths, className }) => {
               strokeWidth="2"
               fill="none"
               initial={{ pathLength: 0 }}
-              style={{ pathLength: pathLengths[i] }}
-              transition={transition}
+              animate={{
+                pathLength: getPathProgress(scrollProgress, i),
+              }}
+              transition={{ duration: 0.8, ease: "linear" }}
             />
           </g>
         ))}
-
         <defs>
           <filter id="blurMe">
             <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
@@ -319,21 +355,25 @@ export const GoogleGeminiEffect = ({ pathLengths, className }) => {
         </defs>
       </svg>
 
-      {/* Logos with black rounded squares and offsets */}
+      {/* Logos */}
       {logoPositions.map((logoPos, i) => {
         if (!logoPos) return null;
 
-        // Interpolate offsets based on scroll progress
-        const progress = Math.min(getLogoPathProgress(scrollProgress, i) / 0.5, 1); // Normalize to 0-1
+        const progress = Math.min(
+          getLogoPathProgress(scrollProgress, i) / 0.5,
+          1
+        );
         const startOffset = logoStartOffsets[i] || { x: 0, y: 0 };
         const endOffset = logoEndOffsets[i] || { x: 0, y: 0 };
-        const currentOffsetX = startOffset.x + (endOffset.x - startOffset.x) * progress;
-        const currentOffsetY = startOffset.y + (endOffset.y - startOffset.y) * progress;
+        const currentOffsetX =
+          startOffset.x + (endOffset.x - startOffset.x) * progress;
+        const currentOffsetY =
+          startOffset.y + (endOffset.y - startOffset.y) * progress;
 
         return (
           <motion.div
             key={`logo-${i}`}
-            className="absolute z-45 flex items-center justify-center bg-black rounded-full w-12 h-12"
+            className="absolute z-45 flex items-center justify-center bg-black rounded-md border-[0.1px] border-gray-400 w-12 h-12"
             initial={{
               x: (points[i]?.[0]?.x || 0) + startOffset.x,
               y: (points[i]?.[0]?.y || 0) + startOffset.y - 180,
@@ -356,11 +396,21 @@ export const GoogleGeminiEffect = ({ pathLengths, className }) => {
               height={32}
               className="rounded-full"
             />
+            <div
+              className="absolute top-0 right-0 w-6 h-6 rounded-tr-lg pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(circle at top right, rgba(255,255,255,0.8), rgba(0,255,0,0) 70%, transparent 100%)",
+                filter: "blur(4px)",
+                mixBlendMode: "screen",
+                opacity: 0.9,
+              }}
+            />
           </motion.div>
         );
       })}
 
-      {/* TRIG texts with black rounded squares */}
+      {/* TRIG Divs */}
       {trigPositions.map((trigPos, i) => {
         if (!trigPos) return null;
 
@@ -371,8 +421,8 @@ export const GoogleGeminiEffect = ({ pathLengths, className }) => {
           <motion.div
             key={`trig-${i}`}
             className={cn(
-              "absolute z-45 flex items-center justify-center bg-black rounded-lg w-12 h-12",
-              sora.className // Apply Sora font to TRIG text
+              "absolute z-45 flex items-center justify-center bg-black rounded-md w-12 h-12 border-[0.1px]",
+              sora.className
             )}
             initial={{
               x: initialPoint.x,
@@ -389,6 +439,16 @@ export const GoogleGeminiEffect = ({ pathLengths, className }) => {
               transform: "translate(-50%, -50%)",
             }}
           >
+            <div
+              className="absolute top-0 right-0 w-6 h-6 rounded-tr-lg pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(circle at top right, rgba(255,255,255,0.8), rgba(0,255,0,0) 70%, transparent 100%)",
+                filter: "blur(4px)",
+                mixBlendMode: "screen",
+                opacity: 0.9,
+              }}
+            />
             <span className="text-white font-bold text-sm">TRIG</span>
           </motion.div>
         );
